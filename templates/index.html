@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Umi no Me | 海の目</title>
+  <meta name="description" content="Umi no Me — 海のゴミと生物を検知して見える化するデモUI" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Noto Sans JP','system-ui','sans-serif'] },
+          colors: { umiblue:{50:'#e6f5ff',100:'#cfeeff',200:'#a0dcff',300:'#73c9ff',400:'#45b6ff',500:'#1fa4ff',600:'#0a86db',700:'#076ab0',800:'#064f84',900:'#043a63'} },
+          dropShadow: { glow:'0 0 25px rgba(31,164,255,.45)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { color-scheme: dark light; }
+    .glass { backdrop-filter: blur(12px); background: color-mix(in oklab, white 6%, transparent); }
+    .ocean-hero { background-image: linear-gradient(to bottom, rgba(3,7,18,.45), rgba(3,7,18,.6)), url('https://images.unsplash.com/photo-1505761671935-60b3a7427bad?q=80&w=2400&auto=format&fit=crop'); background-size:cover; background-position:center; }
+    .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 0); background-size:20px 20px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-white/10 backdrop-blur bg-slate-950/60">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" class="drop-shadow-glow">
+          <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" stroke="#45b6ff" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="3.2" fill="#1fa4ff"/>
+          <path d="M4 16c2.2-1.2 4.5 1.2 6.9 1.2 2.4 0 4.7-2.4 7.1-1.2" stroke="#1fa4ff" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="text-lg font-extrabold tracking-tight">Umi no Me</div>
+          <div class="text-xs text-slate-300/80 -mt-1">海の目 • Marine AI</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="#features" class="hover:text-umiblue-300 transition">特徴</a>
+        <a href="#demo" class="hover:text-umiblue-300 transition">デモ</a>
+        <a href="#model" class="hover:text-umiblue-300 transition">モデル</a>
+        <a href="#roadmap" class="hover:text-umiblue-300 transition">ロードマップ</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <button id="openDemo" class="px-4 py-2 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 transition font-semibold shadow">デモを開く</button>
+        <a href="https://github.com/kawakawa0804/umi-no-me-web2" target="_blank" rel="noreferrer" class="px-4 py-2 rounded-2xl border border-white/15 hover:border-umiblue-400/60 transition">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="ocean-hero relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="py-20 md:py-28 flex flex-col md:flex-row items-center gap-10">
+        <div class="md:w-3/5">
+          <h1 class="text-4xl md:text-6xl font-extrabold leading-tight drop-shadow-glow">海を、<span class="text-umiblue-300">見える化</span>する。<br>Umi no Me</h1>
+          <p class="mt-6 text-slate-200/90 text-lg md:text-xl max-w-2xl">海洋ごみと生物をリアルタイム検知。現場意思決定から回収ロボット連携まで。</p>
+          <div class="mt-8 flex items-center gap-3">
+            <button id="ctaDemo" class="px-5 py-3 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 font-semibold">今すぐ試す</button>
+            <a href="#features" class="px-5 py-3 rounded-2xl border border-white/15 hover:border-umiblue-400/60">特徴を見る</a>
+          </div>
+          <div class="mt-6 text-xs text-slate-300/80">※ UIはブラウザ/サーバ推論どちらにも対応できる設計。</div>
+        </div>
+        <div class="md:w-2/5 w-full">
+          <div class="glass rounded-2xl p-4 border border-white/10 shadow-lg grid-bg">
+            <div class="aspect-video rounded-xl bg-black/50 border border-white/10 flex items-center justify-center relative overflow-hidden">
+              <img src="https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-60" alt="">
+              <div class="relative z-10 text-center">
+                <div class="text-sm uppercase tracking-widest text-umiblue-300">Live Overlay</div>
+                <div class="mt-1 text-2xl font-bold">Detection View</div>
+                <div class="mt-3 text-xs text-slate-300/80">（サンプル）
+                  <span class="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-umiblue-500/20 border border-umiblue-400/30">bottle 0.87</span>
+                  <span class="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30">fish 0.76</span>
+                </div>
+              </div>
+              <div class="absolute inset-0">
+                <div class="absolute left-[14%] top-[20%] w-[38%] h-[46%] border-2 border-umiblue-400 rounded-md"></div>
+                <div class="absolute right-[16%] bottom-[18%] w-[24%] h-[30%] border-2 border-emerald-400 rounded-md"></div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-xs text-slate-300/80">カメラ/動画/画像に対応</div>
+              <button id="openFromCard" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm">デモを開く</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Modal -->
+  <div id="demo" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative max-w-5xl mx-auto mt-16 mb-10 p-4">
+      <div class="glass rounded-2xl border border-white/10 overflow-hidden">
+        <div class="p-4 border-b border-white/10 flex items-center justify-between">
+          <div class="font-semibold">デモ（カメラ/動画/画像 → サーバ推論）</div>
+          <button id="closeDemo" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm">閉じる</button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3">
+          <!-- Controls -->
+          <div class="p-4 space-y-4 border-b lg:border-b-0 lg:border-r border-white/10">
+            <div>
+              <div class="text-sm text-slate-300/90 mb-1">入力ソース</div>
+              <div class="grid grid-cols-3 gap-2">
+                <button data-src="camera" class="srcBtn px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm">カメラ</button>
+                <label class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm text-center cursor-pointer">動画
+                  <input id="videoInput" type="file" accept="video/*" class="hidden" />
+                </label>
+                <label class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm text-center cursor-pointer">画像
+                  <input id="imageInput" type="file" accept="image/*" class="hidden" />
+                </label>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-300/90 mb-1">描画設定</div>
+              <div class="flex items-center justify-between text-sm">
+                <label class="flex items-center gap-2"><input id="showBoxes" type="checkbox" class="accent-umiblue-500" checked>バウンディング</label>
+                <label class="flex items-center gap-2"><input id="showLabels" type="checkbox" class="accent-umiblue-500" checked>ラベル</label>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-300/90 mb-1">ログ</div>
+              <div id="log" class="h-28 p-2 bg-black/40 rounded-xl border border-white/10 text-xs overflow-auto">準備中…</div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button id="startDemo" class="px-4 py-2 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 font-semibold">スタート（実行）</button>
+              <button id="stopDemo" class="px-4 py-2 rounded-2xl border border-white/10 hover:bg-white/10">停止</button>
+              <!-- ★このボタンはCSV一覧ページへ移動する -->
+              <button id="exportCSV" class="px-4 py-2 rounded-2xl border border-white/10 hover:bg-white/10">CSV出力</button>
+            </div>
+          </div>
+          <!-- Viewport -->
+          <div class="lg:col-span-2 bg-black/60 relative">
+            <div id="waiting" class="absolute inset-0 flex items-center justify-center text-slate-300/60 text-sm">入力待ち…</div>
+            <video id="video" class="hidden" playsinline muted></video>
+            <canvas id="canvas" class="block w-full h-full"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="py-10 border-t border-white/10 bg-slate-950 text-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div>© <span id="year"></span> Umi no Me</div>
+      <div class="text-slate-300/80">Made with ❤ to keep our ocean clean.</div>
+    </div>
+  </footer>
+
+  <!-- ========= JS ========= -->
+  <script>
+  // ===== 設定 =====
+  const API_BASE = "http://127.0.0.1:8000";
+
+  // ===== ヘルパ =====
+  const $  = (q) => document.querySelector(q);
+  const $$ = (q) => [...document.querySelectorAll(q)];
+  const log = (m) => { const el=$('#log'); if(!el) return; el.textContent += `\n${new Date().toLocaleTimeString()}  ${m}`; el.scrollTop = el.scrollHeight; };
+  $('#year').textContent = new Date().getFullYear();
+
+  // ===== モーダル開閉 =====
+  function toggleDemo(show){ $('#demo').classList[show?'remove':'add']('hidden'); if(show) prepareDemo(); }
+  ['openDemo','ctaDemo','openFromCard'].forEach(id => document.getElementById(id)?.addEventListener('click', () => toggleDemo(true)));
+  $('#closeDemo')?.addEventListener('click', () => toggleDemo(false));
+
+  // ===== Canvas / Video =====
+  const canvas = $('#canvas'); const ctx = canvas.getContext('2d'); const video = $('#video');
+  let playing=false, detectTimer=null, currentSrc='camera';
+  function resizeCanvas(){ const box=canvas.parentElement.getBoundingClientRect(); canvas.width=Math.max(320,Math.floor(box.width)); canvas.height=Math.max(180,Math.floor(box.height)); }
+  window.addEventListener('resize',()=>{ if(!$('#demo').classList.contains('hidden')) resizeCanvas(); });
+
+  // 入力ソース切替
+  $$('.srcBtn').forEach(b=>b.addEventListener('click',()=>{ currentSrc=b.dataset.src; startSource(); }));
+  $('#imageInput')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; const img=new Image(); img.onload=()=>{ $('#waiting').classList.add('hidden'); resizeCanvas(); ctx.drawImage(img,0,0,canvas.width,canvas.height); log(`画像: ${f.name}`); }; img.src=URL.createObjectURL(f); });
+  $('#videoInput')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; $('#waiting').classList.add('hidden'); resizeCanvas(); const url=URL.createObjectURL(f); video.src=url; video.muted=true; video.playsInline=true; video.onloadeddata=()=>{ video.play(); animate(); log(`動画: ${f.name}`); }; });
+
+  async function startSource(){
+    if(currentSrc!=='camera') return;
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false });
+      video.srcObject = stream; video.muted=true; video.playsInline=true; await video.play();
+      $('#waiting').classList.add('hidden'); resizeCanvas(); animate(); log('カメラ開始');
+    }catch(e){ log('カメラ権限エラー: '+(e.message||e)); }
+  }
+  function stopAll(){ playing=false; if(detectTimer){clearInterval(detectTimer); detectTimer=null;} if(video.srcObject){ for(const t of video.srcObject.getTracks()) t.stop(); video.srcObject=null; } log('停止'); }
+  function animate(){ if($('#demo').classList.contains('hidden')) return; if(video.readyState>=2){ ctx.drawImage(video,0,0,canvas.width,canvas.height); if(window.lastResult) drawOverlay(window.lastResult); } if(playing) requestAnimationFrame(animate); }
+
+  // ===== サーバ推論 =====
+  async function detectFromCanvas(){
+    try{
+      const blob = await new Promise(res => canvas.toBlob(res,'image/jpeg',0.9));
+      const fd = new FormData(); fd.append('image', new File([blob],'frame.jpg',{type:'image/jpeg'}));
+      const t0 = performance.now();
+      const r = await fetch(`${API_BASE}/api/detect?conf=0.20&iou=0.45`, { method:'POST', body:fd });
+      if(!r.ok){ const tx=await r.text(); throw new Error(`${r.status} ${r.statusText}: ${tx}`); }
+      const data = await r.json(); window.lastResult=data;
+      const t1 = performance.now(); log(`検出: ${data.detections.length}件 / ${(t1-t0).toFixed(0)}ms`);
+      drawOverlay(data);
+    }catch(e){ log('検出エラー: '+(e.message||e)); }
+  }
+  function drawOverlay(data){
+    const showBoxes=$('#showBoxes')?.checked, showLabels=$('#showLabels')?.checked;
+    if(!data?.detections?.length || (!showBoxes && !showLabels)) return;
+    const sx = canvas.width/data.width, sy = canvas.height/data.height;
+    ctx.save();
+    for(const d of data.detections){
+      const [x1,y1,x2,y2]=d.box_xyxy; const X1=x1*sx, Y1=y1*sy, W=(x2-x1)*sx, H=(y2-y1)*sy;
+      if(showBoxes){ ctx.strokeStyle='#45b6ff'; ctx.lineWidth=2; ctx.strokeRect(X1,Y1,W,H); }
+      if(showLabels){ const label=`${d.class} ${d.conf.toFixed(2)}`; ctx.font='12px system-ui'; const pad=4, tw=ctx.measureText(label).width+pad*2, th=18;
+        ctx.fillStyle='rgba(4,58,99,.85)'; ctx.fillRect(X1, Math.max(0,Y1-th), tw, th);
+        ctx.fillStyle='#e6f5ff'; ctx.fillText(label, X1+pad, Math.max(12, Y1-6)); }
+    }
+    ctx.restore();
+  }
+
+  // ===== UI操作 =====
+  function prepareDemo(){ resizeCanvas(); $('#waiting').classList.remove('hidden'); log('UI準備完了'); }
+  $('#startDemo')?.addEventListener('click', async()=>{ if(playing) return; playing=true; await startSource(); animate(); if(!detectTimer) detectTimer=setInterval(detectFromCanvas, 800); });
+  $('#stopDemo')?.addEventListener('click', ()=> stopAll());
+
+  // ===== CSV出力ボタン → CSVページへ移動 =====
+  (function patchCSVButton(){
+    const CSV_PAGE = `${location.origin}/templates/csv.html`;
+    const oldBtn = document.getElementById('exportCSV');
+    if(!oldBtn) return;
+    const newBtn = oldBtn.cloneNode(true);           // 既存のハンドラを完全に除去
+    newBtn.id = 'exportCSV';
+    newBtn.textContent = 'CSV出力';                  // 表示はそのまま
+    newBtn.title = '検出ログ（CSVビュー）を開く';
+    newBtn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); window.location.href = CSV_PAGE; });
+    oldBtn.replaceWith(newBtn);
+  })();
+
+  </script>
+</body>
+</html>

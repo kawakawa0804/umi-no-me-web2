@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Umi no Me | 海の目</title>
+  <meta name="description" content="Umi no Me — 海のゴミと生物を検知して見える化するプロジェクトのデモUI" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Noto Sans JP', 'system-ui', 'sans-serif'] },
+          colors: {
+            umiblue: {
+              50: '#e6f5ff', 100: '#cfeeff', 200: '#a0dcff', 300: '#73c9ff',
+              400: '#45b6ff', 500: '#1fa4ff', 600: '#0a86db', 700: '#076ab0',
+              800: '#064f84', 900: '#043a63'
+            }
+          },
+          dropShadow: {
+            glow: '0 0 25px rgba(31,164,255,0.45)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { color-scheme: dark light; }
+    .glass { backdrop-filter: blur(12px); background: color-mix(in oklab, white 6%, transparent); }
+    .ocean-hero { background-image: linear-gradient(to bottom, rgba(3,7,18,0.45), rgba(3,7,18,0.6)), url('https://images.unsplash.com/photo-1505761671935-60b3a7427bad?q=80&w=2400&auto=format&fit=crop'); background-size: cover; background-position: center; }
+    .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 0); background-size: 20px 20px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-white/10 backdrop-blur bg-slate-950/60">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3 group">
+        <!-- Logo (eye + wave) -->
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-glow">
+          <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z" stroke="#45b6ff" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="3.2" fill="#1fa4ff"/>
+          <path d="M4 16c2.2-1.2 4.5 1.2 6.9 1.2 2.4 0 4.7-2.4 7.1-1.2" stroke="#1fa4ff" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="text-lg font-extrabold tracking-tight">Umi no Me</div>
+          <div class="text-xs text-slate-300/80 -mt-1">海の目 • Marine AI</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="#features" class="hover:text-umiblue-300 transition">特徴</a>
+        <a href="#demo" class="hover:text-umiblue-300 transition">デモ</a>
+        <a href="#model" class="hover:text-umiblue-300 transition">モデル</a>
+        <a href="#roadmap" class="hover:text-umiblue-300 transition">ロードマップ</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <button id="openDemo" class="px-4 py-2 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 active:bg-umiblue-600 transition font-semibold shadow">デモを開く</button>
+        <a href="https://github.com/kawakawa0804/umi-no-me-web2" target="_blank" rel="noreferrer" class="px-4 py-2 rounded-2xl border border-white/15 hover:border-umiblue-400/60 transition">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="ocean-hero relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="py-20 md:py-28 flex flex-col md:flex-row items-center gap-10">
+        <div class="md:w-3/5">
+          <h1 class="text-4xl md:text-6xl font-extrabold leading-tight drop-shadow-glow">海を、<span class="text-umiblue-300">見える化</span>する。<br>Umi no Me</h1>
+          <p class="mt-6 text-slate-200/90 text-lg md:text-xl max-w-2xl">海洋ごみと生物をリアルタイム検知。現場での意思決定から回収ロボット連携まで、ひと続きの体験を。</p>
+          <div class="mt-8 flex items-center gap-3">
+            <button id="ctaDemo" class="px-5 py-3 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 font-semibold shadow">今すぐ試す</button>
+            <a href="#features" class="px-5 py-3 rounded-2xl border border-white/15 hover:border-umiblue-400/60">特徴を見る</a>
+          </div>
+          <div class="mt-6 text-xs text-slate-300/80">※ ブラウザのみ/サーバ処理どちらにも対応できるUI。モデル読み込みは下記「モデル」参照。</div>
+        </div>
+        <div class="md:w-2/5 w-full">
+          <div class="glass rounded-2xl p-4 border border-white/10 shadow-lg grid-bg">
+            <div class="aspect-video rounded-xl bg-black/50 border border-white/10 flex items-center justify-center relative overflow-hidden">
+              <img src="https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1800&auto=format&fit=crop" alt="ocean" class="absolute inset-0 w-full h-full object-cover opacity-60">
+              <div class="relative z-10 text-center">
+                <div class="text-sm uppercase tracking-widest text-umiblue-300">Live Overlay</div>
+                <div class="mt-1 text-2xl font-bold">Detection View</div>
+                <div class="mt-3 text-xs text-slate-300/80">（サンプル）
+                  <span class="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-umiblue-500/20 border border-umiblue-400/30">bottle 0.87</span>
+                  <span class="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30">fish 0.76</span>
+                </div>
+              </div>
+              <div class="absolute inset-0">
+                <!-- sample boxes -->
+                <div class="absolute left-[14%] top-[20%] w-[38%] h-[46%] border-2 border-umiblue-400 rounded-md"></div>
+                <div class="absolute right-[16%] bottom-[18%] w-[24%] h-[30%] border-2 border-emerald-400 rounded-md"></div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-xs text-slate-300/80">カメラ/動画/画像に対応</div>
+              <button id="openFromCard" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm">デモを開く</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="py-20 bg-slate-950">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-extrabold">特徴</h2>
+      <p class="mt-2 text-slate-300/90">UIは軽快に、処理は本格的に。現場投入を想定した設計。</p>
+      <div class="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Card 1 -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+          <div class="flex items-center gap-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-umiblue-300"><path d="M3 5h18M3 12h18M3 19h18" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div class="font-semibold">リアルタイム検知ビュー</div>
+          </div>
+          <p class="mt-3 text-sm text-slate-300/90">低遅延オーバーレイ、FPS/推論時間/クラス別カウントをヘッダ表示。CSVログ出力に対応。</p>
+        </div>
+        <!-- Card 2 -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+          <div class="flex items-center gap-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-emerald-300"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M7 12h10" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div class="font-semibold">モジュール設計</div>
+          </div>
+          <p class="mt-3 text-sm text-slate-300/90">ブラウザ完結（ONNX/TF.js）か、サーバ推論（PyTorch .pt）に切替可能なAPIを想定。</p>
+        </div>
+        <!-- Card 3 -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+          <div class="flex items-center gap-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-fuchsia-300"><path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div class="font-semibold">設置・運用を簡単に</div>
+          </div>
+          <p class="mt-3 text-sm text-slate-300/90">PWA化でオフラインUI、設定のエクスポート/インポート、プリセット切替。</p>
+        </div>
+        <!-- Card 4 -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+          <div class="flex items-center gap-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-amber-300"><path d="M4 6h16v12H4z" stroke="currentColor" stroke-width="1.6"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div class="font-semibold">レポート出力</div>
+          </div>
+          <p class="mt-3 text-sm text-slate-300/90">日次/スポットで検知集計をCSV/PNGエクスポート。グラフは後日実装を想定。</p>
+        </div>
+        <!-- Card 5 -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+          <div class="flex items-center gap-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-cyan-300"><path d="M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-7z" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div class="font-semibold">海のUIデザイン</div>
+          </div>
+          <p class="mt-3 text-sm text-slate-300/90">海色のグラデ/ガラス質感/細かい格子で、軽快で読みやすいUI。</p>
+        </div>
+        <!-- Card 6 -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+          <div class="flex items-center gap-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-rose-300"><path d="M8 12l2 2 6-6" stroke="currentColor" stroke-width="1.8"/></svg>
+            <div class="font-semibold">アクセシビリティ</div>
+          </div>
+          <p class="mt-3 text-sm text-slate-300/90">キーボード操作・コントラスト・テキストサイズに配慮。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Model Section -->
+  <section id="model" class="py-20 bg-gradient-to-b from-slate-950 to-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-extrabold">モデル</h2>
+      <p class="mt-2 text-slate-300/90">.pt（サーバ推論）/ ONNX（ブラウザ推論）に対応できるUI。Git LFS での大容量管理も想定。</p>
+      <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass rounded-2xl p-6 border border-white/10">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">モデルファイル</div>
+            <div class="text-xs text-slate-300/70">最大サイズは管理方法で変わります</div>
+          </div>
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <label class="block">
+              <span class="text-slate-200">サーバ用（.pt）</span>
+              <input type="file" accept=".pt" class="mt-2 block w-full text-slate-200 file:mr-4 file:rounded-xl file:border-0 file:px-4 file:py-2 file:bg-umiblue-500/20 file:text-slate-100 file:hover:bg-umiblue-500/30" />
+              <span class="block mt-1 text-xs text-slate-300/80">※ バックエンド（PyTorch）に送る方式。Git LFS でリポジトリ管理可。</span>
+            </label>
+            <label class="block">
+              <span class="text-slate-200">ブラウザ用（.onnx/.webonnx）</span>
+              <input type="file" accept=".onnx,.ort" class="mt-2 block w-full text-slate-200 file:mr-4 file:rounded-xl file:border-0 file:px-4 file:py-2 file:bg-umiblue-500/20 file:text-slate-100 file:hover:bg-umiblue-500/30" />
+              <span class="block mt-1 text-xs text-slate-300/80">※ 端末内で完結（ONNX Runtime Webなど）。軽量・低待ち時間。</span>
+            </label>
+          </div>
+          <div class="mt-5 flex items-center gap-3">
+            <button class="px-4 py-2 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 font-semibold">読み込む（ダミー）</button>
+            <span id="modelStatus" class="text-xs text-slate-300/80">準備待ち…</span>
+          </div>
+        </div>
+        <div class="glass rounded-2xl p-6 border border-white/10">
+          <div class="font-semibold">運用メモ</div>
+          <ul class="mt-3 space-y-2 text-sm text-slate-300/90 list-disc list-inside">
+            <li>100MB超は <b>Git LFS</b> 管理。配布が多い場合は <b>GitHub Releases</b> / <b>Hugging Face Hub</b> も検討。</li>
+            <li>UIは共通で、推論先だけ切替（<code>/api/detect</code> or WebNN/ONNX）。</li>
+            <li>CSV/画像は <code>/logs/</code> と <code>/exports/</code> に保存想定。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Modal -->
+  <div id="demo" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative max-w-5xl mx-auto mt-16 mb-10 p-4">
+      <div class="glass rounded-2xl border border-white/10 overflow-hidden">
+        <div class="p-4 border-b border-white/10 flex items-center justify-between">
+          <div class="font-semibold">デモ（UIのみ / 推論は未接続）</div>
+          <button id="closeDemo" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm">閉じる</button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3">
+          <!-- Controls -->
+          <div class="p-4 space-y-4 border-b lg:border-b-0 lg:border-r border-white/10">
+            <div>
+              <div class="text-sm text-slate-300/90 mb-1">入力ソース</div>
+              <div class="grid grid-cols-3 gap-2">
+                <button data-src="camera" class="srcBtn px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm">カメラ</button>
+                <label class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm text-center cursor-pointer">動画
+                  <input id="videoInput" type="file" accept="video/*" class="hidden" />
+                </label>
+                <label class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm text-center cursor-pointer">画像
+                  <input id="imageInput" type="file" accept="image/*" class="hidden" />
+                </label>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-300/90 mb-1">描画設定</div>
+              <div class="flex items-center justify-between text-sm">
+                <label class="flex items-center gap-2"><input id="showBoxes" type="checkbox" class="accent-umiblue-500" checked>バウンディング</label>
+                <label class="flex items-center gap-2"><input id="showLabels" type="checkbox" class="accent-umiblue-500" checked>ラベル</label>
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-300/90 mb-1">ログ</div>
+              <div id="log" class="h-28 p-2 bg-black/40 rounded-xl border border-white/10 text-xs overflow-auto">準備中…</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="startDemo" class="px-4 py-2 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 font-semibold">スタート（疑似）</button>
+              <button id="exportCSV" class="px-4 py-2 rounded-2xl border border-white/10 hover:bg-white/10">CSV出力</button>
+            </div>
+          </div>
+          <!-- Viewport -->
+          <div class="lg:col-span-2 bg-black/60 relative">
+            <div class="absolute inset-0 flex items-center justify-center text-slate-300/60 text-sm">入力待ち…</div>
+            <canvas id="canvas" class="block w-full h-full"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Roadmap -->
+  <section id="roadmap" class="py-20 bg-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-extrabold">ロードマップ</h2>
+      <ol class="mt-8 relative border-s border-white/10">
+        <li class="ms-6 pb-8">
+          <span class="absolute -start-3.5 flex h-7 w-7 items-center justify-center rounded-full bg-umiblue-500/20 border border-umiblue-400/40">1</span>
+          <div class="font-semibold">UI刷新（このページ）</div>
+          <p class="text-sm text-slate-300/90 mt-1">スタンドアロンHTMLで配布/テストを高速化。</p>
+        </li>
+        <li class="ms-6 pb-8">
+          <span class="absolute -start-3.5 flex h-7 w-7 items-center justify-center rounded-full bg-umiblue-500/20 border border-umiblue-400/40">2</span>
+          <div class="font-semibold">推論接続</div>
+          <p class="text-sm text-slate-300/90 mt-1">サーバ（FastAPI + PyTorch .pt）または ONNX Runtime Web のどちらかを接続。</p>
+        </li>
+        <li class="ms-6 pb-8">
+          <span class="absolute -start-3.5 flex h-7 w-7 items-center justify-center rounded-full bg-umiblue-500/20 border border-umiblue-400/40">3</span>
+          <div class="font-semibold">CSV/画像エクスポート・設定保存</div>
+          <p class="text-sm text-slate-300/90 mt-1">検知履歴の自動保存・プリセット切替を実装。</p>
+        </li>
+        <li class="ms-6">
+          <span class="absolute -start-3.5 flex h-7 w-7 items-center justify-center rounded-full bg-umiblue-500/20 border border-umiblue-400/40">4</span>
+          <div class="font-semibold">ロボット連携・現場運用</div>
+          <p class="text-sm text-slate-300/90 mt-1">HTTP/シリアル/ROS2などで外部制御連携。</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 border-t border-white/10 bg-slate-950 text-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div>© <span id="year"></span> Umi no Me</div>
+      <div class="text-slate-300/80">Made with ❤ to keep our ocean clean.</div>
+    </div>
+  </footer>
+
+  <script>
+    const $ = (q) => document.querySelector(q);
+    const $$ = (q) => [...document.querySelectorAll(q)];
+
+    // Year
+    $('#year').textContent = new Date().getFullYear();
+
+    // Demo modal toggles
+    const toggleDemo = (show) => { $('#demo').classList[show ? 'remove' : 'add']('hidden'); };
+    ['openDemo','ctaDemo','openFromCard'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.addEventListener('click', () => toggleDemo(true));
+    });
+    $('#closeDemo').addEventListener('click', () => toggleDemo(false));
+
+    // Simple demo canvas logic (UI only)
+    const canvas = $('#canvas');
+    const ctx = canvas.getContext('2d');
+    const log = (msg) => { const el=$('#log'); el.textContent += `\n${new Date().toLocaleTimeString()}  ${msg}`; el.scrollTop = el.scrollHeight; }
+
+    const resizeCanvas = () => { const box = canvas.parentElement.getBoundingClientRect(); canvas.width = Math.floor(box.width); canvas.height = Math.floor(box.height); };
+    const drawPlaceholder = () => {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      if ($('#showBoxes').checked) {
+        ctx.strokeStyle = '#45b6ff'; ctx.lineWidth = 2; ctx.strokeRect(canvas.width*0.12, canvas.height*0.15, canvas.width*0.42, canvas.height*0.55);
+        ctx.strokeStyle = '#34d399'; ctx.strokeRect(canvas.width*0.62, canvas.height*0.55, canvas.width*0.25, canvas.height*0.3);
+      }
+      if ($('#showLabels').checked) {
+        ctx.fillStyle = 'rgba(4,58,99,0.8)'; ctx.fillRect(canvas.width*0.12, canvas.height*0.15 - 24, 120, 22);
+        ctx.fillStyle = '#e6f5ff'; ctx.font = '12px system-ui'; ctx.fillText('bottle 0.87', canvas.width*0.12 + 8, canvas.height*0.15 - 8);
+        ctx.fillStyle = 'rgba(3,84,68,0.85)'; ctx.fillRect(canvas.width*0.62, canvas.height*0.55 - 24, 100, 22);
+        ctx.fillStyle = '#e6fffa'; ctx.fillText('fish 0.76', canvas.width*0.62 + 8, canvas.height*0.55 - 8);
+      }
+    };
+
+    const prepareDemo = () => { resizeCanvas(); drawPlaceholder(); log('UI準備完了'); };
+    window.addEventListener('resize', () => { if (!$('#demo').classList.contains('hidden')) { prepareDemo(); } });
+
+    $('#startDemo').addEventListener('click', () => { log('（疑似）推論開始 → 結果を描画'); drawPlaceholder(); });
+
+    // Inputs (only preview intent for now)
+    $('#imageInput').addEventListener('change', (e) => {
+      const file = e.target.files?.[0]; if (!file) return;
+      const img = new Image(); img.onload = () => { resizeCanvas(); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); drawPlaceholder(); log(`画像読み込み: ${file.name}`); }; img.src = URL.createObjectURL(file);
+    });
+    $('#videoInput').addEventListener('change', (e) => {
+      const file = e.target.files?.[0]; if (!file) return;
+      resizeCanvas();
+      const url = URL.createObjectURL(file);
+      const video = document.createElement('video'); video.src = url; video.muted = true; video.playsInline = true; video.addEventListener('loadeddata', () => { video.play(); animate(); log(`動画読み込み: ${file.name}`); });
+      function animate(){ if($('#demo').classList.contains('hidden')) { video.pause(); return; } ctx.drawImage(video, 0, 0, canvas.width, canvas.height); drawPlaceholder(); requestAnimationFrame(animate); }
+    });
+
+    // CSV export (fake data)
+    $('#exportCSV').addEventListener('click', () => {
+      const rows = [ ['timestamp','class','confidence'], [new Date().toISOString(),'bottle','0.87'], [new Date().toISOString(),'fish','0.76'] ];
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `umi-no-me-demo-${Date.now()}.csv`; a.click();
+      log('CSVを出力しました');
+    });
+
+    // Open demo when visible
+    const showOnOpen = () => { if (!$('#demo').classList.contains('hidden')) { prepareDemo(); } };
+    ['openDemo','ctaDemo','openFromCard'].forEach(id => document.getElementById(id)?.addEventListener('click', showOnOpen));
+  </script>
+</body>
+</html>
+

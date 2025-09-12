@@ -1,0 +1,6 @@
+flask>=3.0,<4
+gunicorn>=21
+ultralytics
+opencv-python-headless
+pandas
+numpy

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Umi no Me – 検出ログCSV</title>
+
+  <!-- ✅ Favicon （必要ならパスだけ変更）-->
+  <link rel="icon" type="image/png" sizes="32x32"  href="/static/img/umi-favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/img/umi-favicon.png">
+  <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico?v=1">
+  <meta name="theme-color" content="#0a2540">
+
+  <!-- DataTables + Buttons -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+  <style>
+    body { font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif; padding: 24px; background:#0f172a; color:#e2e8f0; }
+    h1 { margin: 0 0 16px; font-size: 20px; }
+    .toolbar { margin: 12px 0 20px; display:flex; gap:8px; align-items:center; }
+    button { padding: 8px 12px; border-radius: 10px; border:1px solid #334155; background:#1e293b; color:#e2e8f0; cursor:pointer; }
+    button:hover { background:#0b4a6f; border-color:#38bdf8; }
+    #status { font-size:12px; opacity:.9; }
+    .err { color:#fecaca; }
+  </style>
+</head>
+<body>
+  <h1>検出ログ（CSVビュー）</h1>
+  <div class="toolbar">
+    <button id="refresh">更新</button>
+    <button id="clear">全クリア</button>
+    <span id="status">準備中…</span>
+  </div>
+
+  <table id="csvTable" class="display" style="width:100%"></table>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+
+    // 例: 2025/09/12 10:38（Asia/Tokyo, 24h）
+    function fmtTimestampJP24(input) {
+      const d = new Date(input);
+      if (isNaN(d.getTime())) return input;
+      const parts = new Intl.DateTimeFormat('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(d).reduce((a, p) => (a[p.type] = p.value, a), {});
+      return `${parts.year}/${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`;
+    }
+
+    const statusEl = document.getElementById('status');
+    let dtInstance = null;
+
+    function toColumns(data) {
+      const keys = (Array.isArray(data) && data.length) ? Object.keys(data[0])
+        : ['timestamp','class','confidence','x1','y1','x2','y2','img_w','img_h'];
+
+      return keys.map(k => {
+        if (k === 'timestamp') {
+          return {
+            title: 'timestamp',
+            data: 'timestamp',
+            render: (val, type) => {
+              if (type === 'display' || type === 'filter' || type === 'export') return fmtTimestampJP24(val);
+              return val; // sort は元値
+            }
+          };
+        }
+        return { title: k, data: k };
+      });
+    }
+
+    function buildTable(data) {
+      const columns = toColumns(data);
+      const tsIndex = columns.findIndex(c => c.data === 'timestamp');
+
+      if (dtInstance) {
+        dtInstance.clear().rows.add(data).draw(false);
+        return;
+      }
+
+      dtInstance = $('#csvTable').DataTable({
+        data, columns,
+        pageLength: 50,
+        dom: 'Bfrtip',
+        buttons: [{
+          extend: 'csvHtml5',
+          text: 'CSV ダウンロード',
+          title: 'umi-no-me-detections',
+          exportOptions: { columns: ':visible', orthogonal: 'export' }
+        }],
+        language: { url:'https://cdn.datatables.net/plug-ins/1.13.7/i18n/ja.json' },
+        order: tsIndex >= 0 ? [[tsIndex, 'desc']] : [[0, 'desc']]
+      });
+    }
+
+    async function loadData() {
+      try {
+        statusEl.textContent = "取得中… " + API + "/csv-data";
+        const r = await fetch(API + "/csv-data");
+        if (!r.ok) { statusEl.innerHTML = "取得失敗: <span class='err'>" + r.status + " " + r.statusText + "</span>"; return; }
+        const json = await r.json();
+        buildTable(json);
+        statusEl.textContent = "行数: " + json.length + (json.length === 0 ? "（まずデモ画面で検出→更新）" : "");
+      } catch (e) {
+        statusEl.innerHTML = "エラー: <span class='err'>" + (e.message || e) + "</span>";
+      }
+    }
+
+    async function clearAll() {
+      try {
+        statusEl.textContent = "クリア中…";
+        await fetch(API + "/csv-data/clear", { method: 'POST' });
+        if (dtInstance) dtInstance.clear().draw(false);
+        statusEl.textContent = "クリアしました（0 行）";
+      } catch (e) {
+        statusEl.innerHTML = "クリア失敗: <span class='err'>" + (e.message || e) + "</span>";
+      }
+    }
+
+    document.getElementById('refresh').addEventListener('click', loadData);
+    document.getElementById('clear').addEventListener('click', clearAll);
+
+    loadData();
+    setInterval(loadData, 10000);
+  </script>
+</body>
+</html>
