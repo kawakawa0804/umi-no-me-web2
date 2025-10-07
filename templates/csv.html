@@ -3,132 +3,95 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Umi no Me – 検出ログCSV</title>
-
-  <!-- ✅ Favicon （必要ならパスだけ変更）-->
-  <link rel="icon" type="image/png" sizes="32x32"  href="/static/img/umi-favicon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/static/img/umi-favicon.png">
+  <title>Umi no Me | 検出ログ</title>
   <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico?v=1">
-  <meta name="theme-color" content="#0a2540">
-
-  <!-- DataTables + Buttons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-
   <style>
-    body { font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif; padding: 24px; background:#0f172a; color:#e2e8f0; }
-    h1 { margin: 0 0 16px; font-size: 20px; }
-    .toolbar { margin: 12px 0 20px; display:flex; gap:8px; align-items:center; }
-    button { padding: 8px 12px; border-radius: 10px; border:1px solid #334155; background:#1e293b; color:#e2e8f0; cursor:pointer; }
-    button:hover { background:#0b4a6f; border-color:#38bdf8; }
-    #status { font-size:12px; opacity:.9; }
-    .err { color:#fecaca; }
+    :root { color-scheme: dark light; }
+    body { font-family: 'Noto Sans JP', system-ui, sans-serif; background:#0f172a; color:#e5e7eb; }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    a.btn { display:inline-block; padding:8px 14px; border:1px solid #ffffff22; border-radius:12px; color:#e5e7eb; text-decoration:none; }
+    a.btn:hover { background:#ffffff14; }
+    h1 { font-size:20px; margin: 0 0 14px; }
+    #csvTable { width:100%; background:#111827; }
+    table.dataTable thead th { color:#cfeeff; }
   </style>
-</head>
-<body>
-  <h1>検出ログ（CSVビュー）</h1>
-  <div class="toolbar">
-    <button id="refresh">更新</button>
-    <button id="clear">全クリア</button>
-    <span id="status">準備中…</span>
-  </div>
-
-  <table id="csvTable" class="display" style="width:100%"></table>
 
   <script>
-    const API = "http://127.0.0.1:8000";
+  (function(){
+    const qs = new URLSearchParams(location.search).get('api');
+    const ls = localStorage.getItem('API_BASE');
+    window.API_BASE = qs || ls || 'http://127.0.0.1:8000';
+    if (qs) localStorage.setItem('API_BASE', window.API_BASE);
+  })();
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
+      <h1>検出ログ（CSVビュー）</h1>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:12px; opacity:.8;">API: <code id="apiLabel"></code></span>
+        <a class="btn" href="../index.html">戻る</a>
+      </div>
+    </div>
+    <table id="csvTable" class="display"></table>
+  </div>
 
-    // 例: 2025/09/12 10:38（Asia/Tokyo, 24h）
-    function fmtTimestampJP24(input) {
-      const d = new Date(input);
-      if (isNaN(d.getTime())) return input;
-      const parts = new Intl.DateTimeFormat('ja-JP', {
-        timeZone: 'Asia/Tokyo',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false
-      }).formatToParts(d).reduce((a, p) => (a[p.type] = p.value, a), {});
-      return `${parts.year}/${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`;
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script>
+  (async function () {
+    document.getElementById('apiLabel').textContent = window.API_BASE;
+
+    function pad(n){ return n<10 ? '0'+n : ''+n; }
+    function fmt(ts){
+      try{
+        const d = new Date(ts);
+        const y = d.getFullYear();
+        const m = pad(d.getMonth()+1);
+        const dd = pad(d.getDate());
+        const hh = pad(d.getHours());
+        const mm = pad(d.getMinutes());
+        return `${y}/${m}/${dd} ${hh}:${mm}`;
+      }catch(_){ return ts; }
     }
 
-    const statusEl = document.getElementById('status');
-    let dtInstance = null;
+    let data = [];
+    try{
+      const res = await fetch(`${window.API_BASE}/csv-data`);
+      if(!res.ok) throw new Error(await res.text());
+      data = await res.json();
+    }catch(e){
+      alert('CSVデータ取得に失敗しました: ' + (e.message || e));
+      data = [];
+    }
 
-    function toColumns(data) {
-      const keys = (Array.isArray(data) && data.length) ? Object.keys(data[0])
-        : ['timestamp','class','confidence','x1','y1','x2','y2','img_w','img_h'];
-
-      return keys.map(k => {
-        if (k === 'timestamp') {
-          return {
-            title: 'timestamp',
-            data: 'timestamp',
-            render: (val, type) => {
-              if (type === 'display' || type === 'filter' || type === 'export') return fmtTimestampJP24(val);
-              return val; // sort は元値
-            }
-          };
-        }
-        return { title: k, data: k };
+    if (Array.isArray(data) && data.length) {
+      data = data.map(row => {
+        const r = {...row};
+        const k = Object.keys(r).find(key => /time|timestamp|ts/i.test(key)) || 'timestamp';
+        if (r[k]) r[k] = fmt(r[k]);
+        return r;
       });
     }
 
-    function buildTable(data) {
-      const columns = toColumns(data);
-      const tsIndex = columns.findIndex(c => c.data === 'timestamp');
+    const columns = (() => {
+      const sample = data[0] || { timestamp:'', class:'', confidence:'' };
+      return Object.keys(sample).map(k => ({ title:k, data:k }));
+    })();
 
-      if (dtInstance) {
-        dtInstance.clear().rows.add(data).draw(false);
-        return;
-      }
-
-      dtInstance = $('#csvTable').DataTable({
-        data, columns,
-        pageLength: 50,
-        dom: 'Bfrtip',
-        buttons: [{
-          extend: 'csvHtml5',
-          text: 'CSV ダウンロード',
-          title: 'umi-no-me-detections',
-          exportOptions: { columns: ':visible', orthogonal: 'export' }
-        }],
-        language: { url:'https://cdn.datatables.net/plug-ins/1.13.7/i18n/ja.json' },
-        order: tsIndex >= 0 ? [[tsIndex, 'desc']] : [[0, 'desc']]
-      });
-    }
-
-    async function loadData() {
-      try {
-        statusEl.textContent = "取得中… " + API + "/csv-data";
-        const r = await fetch(API + "/csv-data");
-        if (!r.ok) { statusEl.innerHTML = "取得失敗: <span class='err'>" + r.status + " " + r.statusText + "</span>"; return; }
-        const json = await r.json();
-        buildTable(json);
-        statusEl.textContent = "行数: " + json.length + (json.length === 0 ? "（まずデモ画面で検出→更新）" : "");
-      } catch (e) {
-        statusEl.innerHTML = "エラー: <span class='err'>" + (e.message || e) + "</span>";
-      }
-    }
-
-    async function clearAll() {
-      try {
-        statusEl.textContent = "クリア中…";
-        await fetch(API + "/csv-data/clear", { method: 'POST' });
-        if (dtInstance) dtInstance.clear().draw(false);
-        statusEl.textContent = "クリアしました（0 行）";
-      } catch (e) {
-        statusEl.innerHTML = "クリア失敗: <span class='err'>" + (e.message || e) + "</span>";
-      }
-    }
-
-    document.getElementById('refresh').addEventListener('click', loadData);
-    document.getElementById('clear').addEventListener('click', clearAll);
-
-    loadData();
-    setInterval(loadData, 10000);
+    new DataTable('#csvTable', {
+      data,
+      columns,
+      paging: true,
+      searching: true,
+      order: [[0, 'desc']],
+      language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/ja.json' }
+    });
+  })();
   </script>
 </body>
 </html>
