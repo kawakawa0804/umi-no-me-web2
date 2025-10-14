@@ -146,31 +146,112 @@
     </div>
   </footer>
 
-<script>
-(function(){
-  const btn = document.getElementById('exportCSV');
-  if (!btn) return;
+  <script>
+  const $  = (q) => document.querySelector(q);
+  const $$ = (q) => [...document.querySelectorAll(q)];
+  const log = (m) => { const el=$('#log'); if(!el) return; el.textContent += `\n${new Date().toLocaleTimeString()}  ${m}`; el.scrollTop = el.scrollHeight; };
+  $('#year').textContent = new Date().getFullYear();
 
-  // 今のAPIを引き継ぐ
-  const api = window.API_BASE ? `?api=${encodeURIComponent(window.API_BASE)}` : '';
+  function toggleDemo(show){
+    const c = document.getElementById('demo').classList;
+    c[show ? 'remove' : 'add']('hidden');
+    if (show) { prepareDemo(); }
+    else { stopAll(); }
+  }
+  ['openDemo','ctaDemo','openFromCard'].forEach(id => document.getElementById(id)?.addEventListener('click', () => toggleDemo(true)));
+  $('#closeDemo')?.addEventListener('click', () => toggleDemo(false));
 
-  // GitHub Pagesなら絶対URL / ローカルなら相対URL
-  let target;
-  if (location.hostname.endsWith('github.io')) {
-    target = `https://${location.hostname}/umi-no-me-web2/templates/csv.html${api}`;
-  } else {
-    target = new URL('templates/csv.html' + api, location.href).toString();
+  const canvas = $('#canvas'); const ctx = canvas.getContext('2d'); const video = $('#video');
+  let playing=false, detectTimer=null, currentSrc='camera';
+  function resizeCanvas(){ const box=canvas.parentElement.getBoundingClientRect(); canvas.width=Math.max(320,Math.floor(box.width)); canvas.height=Math.max(180,Math.floor(box.height)); }
+  window.addEventListener('resize',()=>{ if(!$('#demo').classList.contains('hidden')) resizeCanvas(); });
+
+  $$('.srcBtn').forEach(b=>b.addEventListener('click',()=>{ currentSrc=b.dataset.src; startSource(); }));
+  $('#imageInput')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; const img=new Image(); img.onload=()=>{ $('#waiting').classList.add('hidden'); resizeCanvas(); ctx.drawImage(img,0,0,canvas.width,canvas.height); log(`画像: ${f.name}`); }; img.src=URL.createObjectURL(f); });
+  $('#videoInput')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; $('#waiting').classList.add('hidden'); resizeCanvas(); const url=URL.createObjectURL(f); video.src=url; video.muted=true; video.playsInline=true; video.onloadeddata=()=>{ video.play(); animate(); log(`動画: ${f.name}`); }; });
+
+  async function startSource(){
+    if(currentSrc!=='camera') return;
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+      video.srcObject=stream; video.muted=true; video.playsInline=true; await video.play();
+      $('#waiting').classList.add('hidden'); resizeCanvas(); playing=true; animate(); log('カメラ開始');
+    }catch(e){ log('カメラ権限エラー: '+(e.message||e)); }
   }
 
-  const clone = btn.cloneNode(true);
-  clone.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.location.href = target;
-  });
-  btn.replaceWith(clone);
-})();
-</script>
+  function stopAll(){
+    playing=false;
+    if(detectTimer){clearInterval(detectTimer); detectTimer=null;}
+    if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; }
+    log('停止');
+  }
 
+  function animate(){
+    if($('#demo').classList.contains('hidden')) return;
+    if(video.readyState>=2){
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      if(window.lastResult) drawOverlay(window.lastResult);
+    }
+    if(playing) requestAnimationFrame(animate);
+  }
 
+  async function detectFromCanvas(){
+    try{
+      const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',0.9));
+      if(!blob) throw new Error('canvas.toBlob failed');
+      const fd=new FormData(); fd.append('image', new File([blob],'frame.jpg',{type:'image/jpeg'}));
+      const t0=performance.now();
+      const r=await fetch(`${window.API_BASE}/api/detect?conf=0.12&iou=0.50`,{method:'POST',body:fd});
+      if(!r.ok){ const tx=await r.text(); throw new Error(`${r.status} ${r.statusText}: ${tx}`); }
+      const data=await r.json(); window.lastResult=data;
+      const t1=performance.now(); log(`検出: ${data.detections?.length||0}件 / ${(t1-t0).toFixed(0)}ms`);
+    }catch(e){ log('検出エラー: '+(e?.message||e)); window.lastResult=null; }
+  }
+
+  function drawOverlay(data){
+    const showBoxes=$('#showBoxes')?.checked, showLabels=$('#showLabels')?.checked;
+    if(!data?.detections?.length || (!showBoxes && !showLabels)) return;
+    const sx=canvas.width/data.width, sy=canvas.height/data.height;
+    ctx.save();
+    for(const d of data.detections){
+      const [x1,y1,x2,y2]=d.box_xyxy; const X1=x1*sx, Y1=y1*sy, W=(x2-x1)*sx, H=(y2-y1)*sy;
+
+      if(showBoxes){
+        ctx.lineWidth = Math.max(2, Math.min(W,H)*0.01);
+        ctx.strokeStyle='#45b6ff';
+        ctx.shadowColor='rgba(0,0,0,.6)';
+        ctx.shadowBlur=6;
+        ctx.strokeRect(X1,Y1,W,H);
+        ctx.shadowBlur=0;
+      }
+      if(showLabels){
+        const label=`${d.class} ${d.conf.toFixed(2)}`;
+        ctx.font='13px system-ui';
+        const padH=6, padV=4;
+        const tw=ctx.measureText(label).width+padH*2, th=18+padV;
+        const bx=X1, by=Math.max(0, Y1-th-2);
+        ctx.fillStyle='rgba(4,58,99,.9)';
+        ctx.fillRect(bx,by,tw,th);
+        ctx.fillStyle='#e6f5ff';
+        ctx.fillText(label, bx+padH, by+th-6);
+      }
+    }
+    ctx.restore();
+  }
+
+  function prepareDemo(){ resizeCanvas(); $('#waiting').classList.remove('hidden'); log('UI準備完了'); }
+
+  $('#startDemo')?.addEventListener('click', async()=>{ if(playing) return; playing=true; await startSource(); if(!detectTimer) detectTimer=setInterval(detectFromCanvas,500); });
+  $('#stopDemo')?.addEventListener('click', ()=> stopAll());
+
+  (function(){
+    const url = new URL('templates/csv.html', location.href);
+    const btn = document.getElementById('exportCSV');
+    if(!btn) return;
+    const clone = btn.cloneNode(true);
+    clone.addEventListener('click', e=>{ e.preventDefault(); location.href = url.toString(); });
+    btn.replaceWith(clone);
+  })();
+  </script>
 </body>
 </html>
