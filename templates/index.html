@@ -146,25 +146,23 @@
     </div>
   </footer>
 
-  <script>
+<script>
 (function(){
   const btn = document.getElementById('exportCSV');
   if (!btn) return;
 
-  // 現在の API をクエリに引き継ぐ
+  // 今のAPIを引き継ぐ
   const api = window.API_BASE ? `?api=${encodeURIComponent(window.API_BASE)}` : '';
 
-  // GitHub Pages 上なら絶対URL（/umi-no-me-web2/…）に固定
-  // ローカルや他環境なら相対で templates/csv.html へ遷移
+  // GitHub Pagesなら絶対URL / ローカルなら相対URL
   let target;
   if (location.hostname.endsWith('github.io')) {
-    target = `https://kawakawa0804.github.io/umi-no-me-web2/templates/csv.html${api}`;
+    target = `https://${location.hostname}/umi-no-me-web2/templates/csv.html${api}`;
   } else {
-    // location.href を基準に安全な相対解決
     target = new URL('templates/csv.html' + api, location.href).toString();
   }
 
-  const clone = btn.cloneNode(true);       // 既存ハンドラを消すためにクローン
+  const clone = btn.cloneNode(true);
   clone.addEventListener('click', (e) => {
     e.preventDefault();
     window.location.href = target;
@@ -172,6 +170,7 @@
   btn.replaceWith(clone);
 })();
 </script>
+
 
 </body>
 </html>

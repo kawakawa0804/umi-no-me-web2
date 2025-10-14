@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Umi no Me | 検出ログ</title>
-  <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico?v=1">
+  <link rel="icon" type="image/x-icon" href="../static/img/favicon.ico?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
@@ -20,10 +20,11 @@
   </style>
 
   <script>
+  // API_BASE をクエリまたはlocalStorageから初期化
   (function(){
     const qs = new URLSearchParams(location.search).get('api');
     const ls = localStorage.getItem('API_BASE');
-    window.API_BASE = qs || ls || 'http://127.0.0.1:8000';
+    window.API_BASE = qs || ls || '';
     if (qs) localStorage.setItem('API_BASE', window.API_BASE);
   })();
   </script>
@@ -44,24 +45,25 @@
   <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
   <script>
   (async function () {
-    document.getElementById('apiLabel').textContent = window.API_BASE;
+    const label = document.getElementById('apiLabel');
+    label.textContent = window.API_BASE || '(未設定)';
 
     function pad(n){ return n<10 ? '0'+n : ''+n; }
     function fmt(ts){
       try{
         const d = new Date(ts);
-        const y = d.getFullYear();
-        const m = pad(d.getMonth()+1);
-        const dd = pad(d.getDate());
-        const hh = pad(d.getHours());
-        const mm = pad(d.getMinutes());
-        return `${y}/${m}/${dd} ${hh}:${mm}`;
+        return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       }catch(_){ return ts; }
+    }
+
+    if (!window.API_BASE) {
+      alert('APIが未設定です。画面右上のURLに ?api=HTTPSのAPIエンドポイント を付けて再表示してください。');
+      return;
     }
 
     let data = [];
     try{
-      const res = await fetch(`${window.API_BASE}/csv-data`);
+      const res = await fetch(`${window.API_BASE}/csv-data`, { credentials:'omit' });
       if(!res.ok) throw new Error(await res.text());
       data = await res.json();
     }catch(e){
@@ -83,7 +85,7 @@
       return Object.keys(sample).map(k => ({ title:k, data:k }));
     })();
 
-    $('#csvTable').DataTable({
+    new DataTable('#csvTable', {
       data,
       columns,
       paging: true,
