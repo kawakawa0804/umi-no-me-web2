@@ -83,7 +83,7 @@
       return Object.keys(sample).map(k => ({ title:k, data:k }));
     })();
 
-    new DataTable('#csvTable', {
+    $('#csvTable').DataTable({
       data,
       columns,
       paging: true,
