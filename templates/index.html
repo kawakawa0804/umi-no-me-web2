@@ -1,17 +1,21 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <link rel="icon" type="image/x-icon" href="static/img/favicon.ico?v=1">
-<link rel="apple-touch-icon" href="static/img/favicon.ico?v=1">
+  <!-- ★ Favicon（ルートからの相対パス / 強制更新用の?v=付き） -->
+  <link rel="icon" href="./static/img/favicon.ico?v=20251014">
+  <link rel="shortcut icon" href="./static/img/favicon.ico?v=20251014">
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Umi no Me | 海の目</title>
   <meta name="description" content="Umi no Me — 海のゴミと生物を検知して見える化するデモUI" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- API_BASE を URL ?api= または localStorage から初期化 -->
   <script>
   (function(){
     const qs = new URLSearchParams(location.search).get('api');
@@ -20,6 +24,7 @@
     if (qs) localStorage.setItem('API_BASE', window.API_BASE);
   })();
   </script>
+
   <style>
     :root { color-scheme: dark light; }
     .glass { backdrop-filter: blur(12px); background: color-mix(in oklab, white 6%, transparent); }
@@ -27,9 +32,8 @@
     .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 0); background-size:20px 20px; }
   </style>
 </head>
-<!-- Favicon (PNG) -->
-
 <body class="bg-slate-950 text-slate-100 font-sans">
+  <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-white/10 backdrop-blur bg-slate-950/60">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <a href="#" class="flex items-center gap-3">
@@ -56,6 +60,7 @@
     </div>
   </header>
 
+  <!-- Hero -->
   <section class="ocean-hero relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="py-20 md:py-28 flex flex-col md:flex-row items-center gap-10">
@@ -95,6 +100,7 @@
     </div>
   </section>
 
+  <!-- Demo Modal -->
   <div id="demo" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/60"></div>
     <div class="relative max-w-5xl mx-auto mt-16 mb-10 p-4">
@@ -104,6 +110,7 @@
           <button id="closeDemo" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm">閉じる</button>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3">
+          <!-- Controls -->
           <div class="p-4 space-y-4 border-b lg:border-b-0 lg:border-r border-white/10">
             <div>
               <div class="text-sm text-slate-300/90 mb-1">入力ソース</div>
@@ -131,9 +138,11 @@
             <div class="flex items-center gap-2 flex-wrap">
               <button id="startDemo" class="px-4 py-2 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 font-semibold">スタート（実行）</button>
               <button id="stopDemo" class="px-4 py-2 rounded-2xl border border-white/10 hover:bg-white/10">停止</button>
+              <!-- ★ このボタンをCSVページ遷移に固定（GH Pages でもローカルでもOK） -->
               <button id="exportCSV" class="px-4 py-2 rounded-2xl border border-white/10 hover:bg-white/10">CSV出力</button>
             </div>
           </div>
+          <!-- Viewport -->
           <div class="lg:col-span-2 bg-black/60 relative">
             <div id="waiting" class="absolute inset-0 flex items-center justify-center text-slate-300/60 text-sm">入力待ち…</div>
             <video id="video" class="hidden" playsinline muted></video>
@@ -144,6 +153,7 @@
     </div>
   </div>
 
+  <!-- Footer -->
   <footer class="py-10 border-t border-white/10 bg-slate-950 text-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
       <div>© <span id="year"></span> Umi no Me</div>
@@ -151,6 +161,7 @@
     </div>
   </footer>
 
+  <!-- ========= JS ========= -->
   <script>
   const $  = (q) => document.querySelector(q);
   const $$ = (q) => [...document.querySelectorAll(q)];
@@ -183,14 +194,12 @@
       $('#waiting').classList.add('hidden'); resizeCanvas(); playing=true; animate(); log('カメラ開始');
     }catch(e){ log('カメラ権限エラー: '+(e.message||e)); }
   }
-
   function stopAll(){
     playing=false;
     if(detectTimer){clearInterval(detectTimer); detectTimer=null;}
     if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; }
     log('停止');
   }
-
   function animate(){
     if($('#demo').classList.contains('hidden')) return;
     if(video.readyState>=2){
@@ -199,7 +208,6 @@
     }
     if(playing) requestAnimationFrame(animate);
   }
-
   async function detectFromCanvas(){
     try{
       const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',0.9));
@@ -212,7 +220,6 @@
       const t1=performance.now(); log(`検出: ${data.detections?.length||0}件 / ${(t1-t0).toFixed(0)}ms`);
     }catch(e){ log('検出エラー: '+(e?.message||e)); window.lastResult=null; }
   }
-
   function drawOverlay(data){
     const showBoxes=$('#showBoxes')?.checked, showLabels=$('#showLabels')?.checked;
     if(!data?.detections?.length || (!showBoxes && !showLabels)) return;
@@ -220,14 +227,11 @@
     ctx.save();
     for(const d of data.detections){
       const [x1,y1,x2,y2]=d.box_xyxy; const X1=x1*sx, Y1=y1*sy, W=(x2-x1)*sx, H=(y2-y1)*sy;
-
       if(showBoxes){
         ctx.lineWidth = Math.max(2, Math.min(W,H)*0.01);
         ctx.strokeStyle='#45b6ff';
-        ctx.shadowColor='rgba(0,0,0,.6)';
-        ctx.shadowBlur=6;
-        ctx.strokeRect(X1,Y1,W,H);
-        ctx.shadowBlur=0;
+        ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=6;
+        ctx.strokeRect(X1,Y1,W,H); ctx.shadowBlur=0;
       }
       if(showLabels){
         const label=`${d.class} ${d.conf.toFixed(2)}`;
@@ -235,26 +239,29 @@
         const padH=6, padV=4;
         const tw=ctx.measureText(label).width+padH*2, th=18+padV;
         const bx=X1, by=Math.max(0, Y1-th-2);
-        ctx.fillStyle='rgba(4,58,99,.9)';
-        ctx.fillRect(bx,by,tw,th);
-        ctx.fillStyle='#e6f5ff';
-        ctx.fillText(label, bx+padH, by+th-6);
+        ctx.fillStyle='rgba(4,58,99,.9)'; ctx.fillRect(bx,by,tw,th);
+        ctx.fillStyle='#e6f5ff'; ctx.fillText(label, bx+padH, by+th-6);
       }
     }
     ctx.restore();
   }
-
   function prepareDemo(){ resizeCanvas(); $('#waiting').classList.remove('hidden'); log('UI準備完了'); }
-
   $('#startDemo')?.addEventListener('click', async()=>{ if(playing) return; playing=true; await startSource(); if(!detectTimer) detectTimer=setInterval(detectFromCanvas,500); });
   $('#stopDemo')?.addEventListener('click', ()=> stopAll());
 
+  // ★ CSV出力ボタン：GitHub Pages でもローカルでも正しく遷移（API引き継ぎ）
   (function(){
-    const url = new URL('templates/csv.html', location.href);
     const btn = document.getElementById('exportCSV');
-    if(!btn) return;
+    if (!btn) return;
+    const api = window.API_BASE ? `?api=${encodeURIComponent(window.API_BASE)}` : '';
+    let target;
+    if (location.hostname.endsWith('github.io')) {
+      target = `https://${location.hostname}/umi-no-me-web2/templates/csv.html${api}`;
+    } else {
+      target = new URL('templates/csv.html' + api, location.href).toString();
+    }
     const clone = btn.cloneNode(true);
-    clone.addEventListener('click', e=>{ e.preventDefault(); location.href = url.toString(); });
+    clone.addEventListener('click', (e)=>{ e.preventDefault(); window.location.href = target; });
     btn.replaceWith(clone);
   })();
   </script>
