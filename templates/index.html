@@ -18,8 +18,8 @@
   <!-- API_BASE を URL ?api= または localStorage から初期化 -->
   <script>
   (function(){
-    var qs = new URLSearchParams(location.search).get('api');
-    var ls = localStorage.getItem('API_BASE');
+    const qs = new URLSearchParams(location.search).get('api');
+    const ls = localStorage.getItem('API_BASE');
     window.API_BASE = qs || ls || 'http://127.0.0.1:8000';
     if (qs) localStorage.setItem('API_BASE', window.API_BASE);
   })();
@@ -60,30 +60,6 @@
     </div>
   </header>
 
-  <!-- Quick Actions (中央上4ボタン) -->
-  <section class="relative z-10 -mt-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <button id="btnFeatures" class="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-semibold text-left">
-          特徴を見る
-          <div class="text-xs text-slate-300/70 mt-1">Umi no Meの特長</div>
-        </button>
-        <button id="btnHow" class="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-semibold text-left">
-          仕組みを見る
-          <div class="text-xs text-slate-300/70 mt-1">推論の流れ</div>
-        </button>
-        <button id="btnDemo" class="px-4 py-3 rounded-2xl bg-umiblue-500 hover:bg-umiblue-400 text-sm font-semibold text-left">
-          デモを開く
-          <div class="text-xs text-slate-100/80 mt-1">カメラ/動画/画像</div>
-        </button>
-        <button id="btnCSV" class="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-semibold text-left">
-          CSVを見る
-          <div class="text-xs text-slate-300/70 mt-1">検出ログ</div>
-        </button>
-      </div>
-    </div>
-  </section>
-
   <!-- Hero -->
   <section class="ocean-hero relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -121,46 +97,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- Features -->
-  <section id="features" class="py-20 bg-slate-950">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-3xl md:text-4xl font-extrabold">Umi no Me の特長</h2>
-      <p class="mt-2 text-slate-300/90">AIで海洋ごみと生物を高精度に識別する軽量システム。</p>
-
-      <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="p-5 rounded-2xl border border-white/10 bg-white/5">
-          <div class="font-semibold">高精度な検出</div>
-          <p class="mt-2 text-sm text-slate-300/80">生物／プラスチック（ボトル・袋・缶・ガラス等）をYOLO系で判別。誤検出を低減。</p>
-        </div>
-        <div class="p-5 rounded-2xl border border-white/10 bg-white/5">
-          <div class="font-semibold">軽量・低コスト</div>
-          <p class="mt-2 text-sm text-slate-300/80">ノートPC／ラズパイでも動作。現場運用を想定した負荷設計。</p>
-        </div>
-        <div class="p-5 rounded-2xl border border-white/10 bg-white/5">
-          <div class="font-semibold">記録と可視化</div>
-          <p class="mt-2 text-sm text-slate-300/80">検出結果をCSV保存。後から傾向分析や地図化へ展開可能。</p>
-        </div>
-        <div class="p-5 rounded-2xl border border-white/10 bg-white/5">
-          <div class="font-semibold">教育利用</div>
-          <p class="mt-2 text-sm text-slate-300/80">探究学習教材としても活用できるUI設計。</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- How -->
-  <section id="how" class="py-20 bg-slate-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-3xl md:text-4xl font-extrabold">仕組み</h2>
-      <ol class="mt-6 space-y-3 text-slate-300/90 list-decimal list-inside">
-        <li>カメラ／動画／画像からフレームを取得しCanvasに描画</li>
-        <li>CanvasをJPEG化して <code>API_BASE/api/detect</code> にPOST</li>
-        <li>レスポンスの <code>detections</code> を枠・ラベルでオーバーレイ表示</li>
-        <li>CSVに保存して分析・可視化へ活用（別ページで閲覧）</li>
-      </ol>
     </div>
   </section>
 
@@ -227,130 +163,70 @@
 
   <!-- ========= JS ========= -->
   <script>
-  var $  = function(q){ return document.querySelector(q); };
-  var $$ = function(q){ return Array.prototype.slice.call(document.querySelectorAll(q)); };
-  var log = function(m){
-    var el = $('#log'); if(!el) return;
-    el.textContent += '\n' + new Date().toLocaleTimeString() + '  ' + m;
-    el.scrollTop = el.scrollHeight;
-  };
+  const $  = (q) => document.querySelector(q);
+  const $$ = (q) => [...document.querySelectorAll(q)];
+  const log = (m) => { const el=$('#log'); if(!el) return; el.textContent += `\n${new Date().toLocaleTimeString()}  ${m}`; el.scrollTop = el.scrollHeight; };
   $('#year').textContent = new Date().getFullYear();
 
   function toggleDemo(show){
-    var c = document.getElementById('demo').classList;
-    if (show) { c.remove('hidden'); prepareDemo(); }
-    else { c.add('hidden'); stopAll(); }
+    const c = document.getElementById('demo').classList;
+    c[show ? 'remove' : 'add']('hidden');
+    if (show) { prepareDemo(); }
+    else { stopAll(); }
   }
+  ['openDemo','ctaDemo','openFromCard'].forEach(id => document.getElementById(id)?.addEventListener('click', () => toggleDemo(true)));
+  $('#closeDemo')?.addEventListener('click', () => toggleDemo(false));
 
-  // 3つの起動ボタン（optional chaining 不使用で安全化）
-  (function(){
-    var btn1 = document.getElementById('openDemo');
-    if (btn1) btn1.addEventListener('click', function(){ toggleDemo(true); });
-    var btn2 = document.getElementById('ctaDemo');
-    if (btn2) btn2.addEventListener('click', function(){ toggleDemo(true); });
-    var btn3 = document.getElementById('openFromCard');
-    if (btn3) btn3.addEventListener('click', function(){ toggleDemo(true); });
-    var closeBtn = document.getElementById('closeDemo');
-    if (closeBtn) closeBtn.addEventListener('click', function(){ toggleDemo(false); });
-  })();
+  const canvas = $('#canvas'); const ctx = canvas.getContext('2d'); const video = $('#video');
+  let playing=false, detectTimer=null, currentSrc='camera';
+  function resizeCanvas(){ const box=canvas.parentElement.getBoundingClientRect(); canvas.width=Math.max(320,Math.floor(box.width)); canvas.height=Math.max(180,Math.floor(box.height)); }
+  window.addEventListener('resize',()=>{ if(!$('#demo').classList.contains('hidden')) resizeCanvas(); });
 
-  var canvas = $('#canvas');
-  var ctx = canvas.getContext('2d');
-  var video = $('#video');
-  var playing=false, detectTimer=null, currentSrc='camera';
-
-  function resizeCanvas(){
-    var box = canvas.parentElement.getBoundingClientRect();
-    canvas.width  = Math.max(320, Math.floor(box.width));
-    canvas.height = Math.max(180, Math.floor(box.height));
-  }
-  window.addEventListener('resize', function(){
-    if(!document.getElementById('demo').classList.contains('hidden')) resizeCanvas();
-  });
-
-  $$('.srcBtn').forEach(function(b){
-    b.addEventListener('click', function(){
-      currentSrc = b.getAttribute('data-src');
-      startSource();
-    });
-  });
-
-  var imageInput = document.getElementById('imageInput');
-  if (imageInput) {
-    imageInput.addEventListener('change', function(e){
-      var f = e.target.files && e.target.files[0]; if(!f) return;
-      var img = new Image();
-      img.onload = function(){
-        document.getElementById('waiting').classList.add('hidden');
-        resizeCanvas();
-        ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        log('画像: ' + f.name);
-      };
-      img.src = URL.createObjectURL(f);
-    });
-  }
-
-  var videoInput = document.getElementById('videoInput');
-  if (videoInput) {
-    videoInput.addEventListener('change', function(e){
-      var f = e.target.files && e.target.files[0]; if(!f) return;
-      document.getElementById('waiting').classList.add('hidden');
-      resizeCanvas();
-      var url = URL.createObjectURL(f);
-      video.src = url; video.muted = true; video.playsInline = true;
-      video.onloadeddata = function(){ video.play(); animate(); log('動画: ' + f.name); };
-    });
-  }
+  $$('.srcBtn').forEach(b=>b.addEventListener('click',()=>{ currentSrc=b.dataset.src; startSource(); }));
+  $('#imageInput')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; const img=new Image(); img.onload=()=>{ $('#waiting').classList.add('hidden'); resizeCanvas(); ctx.drawImage(img,0,0,canvas.width,canvas.height); log(`画像: ${f.name}`); }; img.src=URL.createObjectURL(f); });
+  $('#videoInput')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; $('#waiting').classList.add('hidden'); resizeCanvas(); const url=URL.createObjectURL(f); video.src=url; video.muted=true; video.playsInline=true; video.onloadeddata=()=>{ video.play(); animate(); log(`動画: ${f.name}`); }; });
 
   async function startSource(){
     if(currentSrc!=='camera') return;
     try{
-      var stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-      video.srcObject = stream; video.muted = true; video.playsInline = true; await video.play();
-      document.getElementById('waiting').classList.add('hidden');
-      resizeCanvas(); playing=true; animate(); log('カメラ開始');
-    }catch(e){ log('カメラ権限エラー: ' + (e.message||e)); }
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+      video.srcObject=stream; video.muted=true; video.playsInline=true; await video.play();
+      $('#waiting').classList.add('hidden'); resizeCanvas(); playing=true; animate(); log('カメラ開始');
+    }catch(e){ log('カメラ権限エラー: '+(e.message||e)); }
   }
-
   function stopAll(){
     playing=false;
-    if(detectTimer){ clearInterval(detectTimer); detectTimer=null; }
-    if(video.srcObject){ video.srcObject.getTracks().forEach(function(t){ t.stop(); }); video.srcObject=null; }
+    if(detectTimer){clearInterval(detectTimer); detectTimer=null;}
+    if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; }
     log('停止');
   }
-
   function animate(){
-    if(document.getElementById('demo').classList.contains('hidden')) return;
+    if($('#demo').classList.contains('hidden')) return;
     if(video.readyState>=2){
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
       if(window.lastResult) drawOverlay(window.lastResult);
     }
     if(playing) requestAnimationFrame(animate);
   }
-
   async function detectFromCanvas(){
     try{
-      var blob = await new Promise(function(res){ canvas.toBlob(res,'image/jpeg',0.9); });
+      const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',0.9));
       if(!blob) throw new Error('canvas.toBlob failed');
-      var fd = new FormData(); fd.append('image', new File([blob],'frame.jpg',{type:'image/jpeg'}));
-      var t0 = performance.now();
-      var r = await fetch(window.API_BASE + '/api/detect?conf=0.12&iou=0.50', {method:'POST', body:fd});
-      if(!r.ok){ var tx = await r.text(); throw new Error(r.status + ' ' + r.statusText + ': ' + tx); }
-      var data = await r.json(); window.lastResult = data;
-      var t1 = performance.now(); log('検出: ' + (data.detections ? data.detections.length : 0) + '件 / ' + (t1-t0).toFixed(0) + 'ms');
-    }catch(e){ log('検出エラー: ' + (e && e.message ? e.message : e)); window.lastResult=null; }
+      const fd=new FormData(); fd.append('image', new File([blob],'frame.jpg',{type:'image/jpeg'}));
+      const t0=performance.now();
+      const r=await fetch(`${window.API_BASE}/api/detect?conf=0.12&iou=0.50`,{method:'POST',body:fd});
+      if(!r.ok){ const tx=await r.text(); throw new Error(`${r.status} ${r.statusText}: ${tx}`); }
+      const data=await r.json(); window.lastResult=data;
+      const t1=performance.now(); log(`検出: ${data.detections?.length||0}件 / ${(t1-t0).toFixed(0)}ms`);
+    }catch(e){ log('検出エラー: '+(e?.message||e)); window.lastResult=null; }
   }
-
   function drawOverlay(data){
-    var showBoxes = document.getElementById('showBoxes') ? document.getElementById('showBoxes').checked : true;
-    var showLabels = document.getElementById('showLabels') ? document.getElementById('showLabels').checked : true;
-    if(!data || !data.detections || !data.detections.length || (!showBoxes && !showLabels)) return;
-    var sx = canvas.width / data.width, sy = canvas.height / data.height;
+    const showBoxes=$('#showBoxes')?.checked, showLabels=$('#showLabels')?.checked;
+    if(!data?.detections?.length || (!showBoxes && !showLabels)) return;
+    const sx=canvas.width/data.width, sy=canvas.height/data.height;
     ctx.save();
-    for(var i=0;i<data.detections.length;i++){
-      var d = data.detections[i];
-      var x1=d.box_xyxy[0], y1=d.box_xyxy[1], x2=d.box_xyxy[2], y2=d.box_xyxy[3];
-      var X1=x1*sx, Y1=y1*sy, W=(x2-x1)*sx, H=(y2-y1)*sy;
+    for(const d of data.detections){
+      const [x1,y1,x2,y2]=d.box_xyxy; const X1=x1*sx, Y1=y1*sy, W=(x2-x1)*sx, H=(y2-y1)*sy;
       if(showBoxes){
         ctx.lineWidth = Math.max(2, Math.min(W,H)*0.01);
         ctx.strokeStyle='#45b6ff';
@@ -358,92 +234,36 @@
         ctx.strokeRect(X1,Y1,W,H); ctx.shadowBlur=0;
       }
       if(showLabels){
-        var label = d['class'] + ' ' + d.conf.toFixed(2);
+        const label=`${d.class} ${d.conf.toFixed(2)}`;
         ctx.font='13px system-ui';
-        var padH=6, padV=4;
-        var tw=ctx.measureText(label).width+padH*2, th=18+padV;
-        var bx=X1, by=Math.max(0, Y1-th-2);
+        const padH=6, padV=4;
+        const tw=ctx.measureText(label).width+padH*2, th=18+padV;
+        const bx=X1, by=Math.max(0, Y1-th-2);
         ctx.fillStyle='rgba(4,58,99,.9)'; ctx.fillRect(bx,by,tw,th);
         ctx.fillStyle='#e6f5ff'; ctx.fillText(label, bx+padH, by+th-6);
       }
     }
     ctx.restore();
   }
-
-  function prepareDemo(){ resizeCanvas(); document.getElementById('waiting').classList.remove('hidden'); log('UI準備完了'); }
-  var startDemoBtn = document.getElementById('startDemo');
-  if (startDemoBtn) {
-    startDemoBtn.addEventListener('click', async function(){
-      if(playing) return; playing=true; await startSource(); if(!detectTimer) detectTimer=setInterval(detectFromCanvas,500);
-    });
-  }
-  var stopDemoBtn = document.getElementById('stopDemo');
-  if (stopDemoBtn) {
-    stopDemoBtn.addEventListener('click', function(){ stopAll(); });
-  }
+  function prepareDemo(){ resizeCanvas(); $('#waiting').classList.remove('hidden'); log('UI準備完了'); }
+  $('#startDemo')?.addEventListener('click', async()=>{ if(playing) return; playing=true; await startSource(); if(!detectTimer) detectTimer=setInterval(detectFromCanvas,500); });
+  $('#stopDemo')?.addEventListener('click', ()=> stopAll());
 
   // ★ CSV出力ボタン：GitHub Pages でもローカルでも正しく遷移（API引き継ぎ）
   (function(){
-    var btn = document.getElementById('exportCSV');
+    const btn = document.getElementById('exportCSV');
     if (!btn) return;
-    var api = window.API_BASE ? ('?api=' + encodeURIComponent(window.API_BASE)) : '';
-    var target;
-    if (String(location.hostname).slice(-9) === 'github.io') {
-      target = 'https://' + location.hostname + '/umi-no-me-web2/templates/csv.html' + api;
+    const api = window.API_BASE ? `?api=${encodeURIComponent(window.API_BASE)}` : '';
+    let target;
+    if (location.hostname.endsWith('github.io')) {
+      target = `https://${location.hostname}/umi-no-me-web2/templates/csv.html${api}`;
     } else {
       target = new URL('templates/csv.html' + api, location.href).toString();
     }
-    var clone = btn.cloneNode(true);
-    clone.addEventListener('click', function(e){ e.preventDefault(); window.location.href = target; });
+    const clone = btn.cloneNode(true);
+    clone.addEventListener('click', (e)=>{ e.preventDefault(); window.location.href = target; });
     btn.replaceWith(clone);
   })();
-
-  /* ===== 追加：4ボタン＆ナビの動作（optional chainingなし） ===== */
-  (function(){
-    function smoothGo(id){
-      var el = document.querySelector(id);
-      if (!el) return;
-      var header = document.querySelector('header');
-      var offset = header ? header.offsetHeight + 10 : 70;
-      var y = el.getBoundingClientRect().top + window.pageYOffset - offset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
-
-    // 中央4ボタン
-    var bF = document.getElementById('btnFeatures'); if (bF) bF.addEventListener('click', function(){ smoothGo('#features'); });
-    var bH = document.getElementById('btnHow');      if (bH) bH.addEventListener('click', function(){ smoothGo('#how'); });
-    var bD = document.getElementById('btnDemo');     if (bD) bD.addEventListener('click', function(){ toggleDemo(true); });
-    var bC = document.getElementById('btnCSV');
-    if (bC) {
-      bC.addEventListener('click', function(e){
-        e.preventDefault();
-        var api = window.API_BASE ? ('?api=' + encodeURIComponent(window.API_BASE)) : '';
-        var t;
-        if (String(location.hostname).slice(-9) === 'github.io') {
-          t = 'https://' + location.hostname + '/umi-no-me-web2/templates/csv.html' + api;
-        } else {
-          t = new URL('templates/csv.html' + api, location.href).toString();
-        }
-        window.location.href = t;
-      });
-    }
-
-    // ナビ：#demo はモーダル起動、他はスムーススクロール
-    var demoNav = document.querySelector('nav a[href="#demo"]');
-    if (demoNav) {
-      demoNav.addEventListener('click', function(e){ e.preventDefault(); toggleDemo(true); });
-    }
-    var navLinks = document.querySelectorAll('nav a[href^="#"]:not([href="#demo"])');
-    for (var i = 0; i < navLinks.length; i++) {
-      (function(a){
-        a.addEventListener('click', function(e){
-          e.preventDefault();
-          smoothGo(a.getAttribute('href'));
-        });
-      })(navLinks[i]);
-    }
-  })();
-  /* ===== /追加ここまで ===== */
   </script>
 </body>
 </html>
