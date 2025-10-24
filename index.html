@@ -60,7 +60,7 @@
     </div>
   </header>
 
-  <!-- Hero（余計なデモ系ボタンは削除） -->
+  <!-- Hero -->
   <section class="ocean-hero relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="py-20 md:py-28 flex flex-col md:flex-row items-center gap-10">
@@ -127,7 +127,7 @@
   <section id="how" class="py-20 bg-slate-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <h2 class="text-3xl md:text-4xl font-extrabold">仕組み</h2>
-      <ol class="mt-6 space-y-3 text-slate-300/90 list-decimal list-inside">
+    <ol class="mt-6 space-y-3 text-slate-300/90 list-decimal list-inside">
         <li>カメラ／動画／画像からフレームを取得しCanvasに描画</li>
         <li>CanvasをJPEG化して <code>API_BASE/api/detect</code> にPOST</li>
         <li>レスポンスの <code>detections</code> を枠・ラベルでオーバーレイ表示</li>
@@ -140,79 +140,43 @@
   <section id="model" class="py-20 bg-slate-950">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <h2 class="text-3xl md:text-4xl font-extrabold">モデル</h2>
-      <p class="mt-2 text-slate-300/90">用途に応じて軽量・高精度モデルを切り替え可能。下のラジオで選ぶとデモ推論の <code>model</code> パラメータに反映されます。</p>
+      <p class="mt-2 text-slate-300/90">現在の運用モデルは <code>/Users/fugutapc/umi-no-me-web-clean/models/best.pt</code> です。選択するとデモAPIの <code>model</code> パラメータに反映されます。</p>
 
-      <!-- モデル選択 -->
-      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- モデル選択（1択＋Auto） -->
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <label class="flex items-start gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 cursor-pointer">
           <input type="radio" name="modelName" value="auto" class="mt-1 accent-umiblue-500" checked>
           <div>
-            <div class="font-semibold">Auto（推奨）</div>
-            <div class="text-sm text-slate-300/80">サーバ側のデフォルトモデルを使用。運用環境の設定に追従。</div>
+            <div class="font-semibold">Auto（サーバデフォルト）</div>
+            <div class="text-sm text-slate-300/80">API側の既定モデルを使用（指定なし）。</div>
           </div>
         </label>
         <label class="flex items-start gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 cursor-pointer">
-          <input type="radio" name="modelName" value="marine-tiny" class="mt-1 accent-umiblue-500">
+          <input type="radio" name="modelName" value="/Users/fugutapc/umi-no-me-web-clean/models/best.pt" class="mt-1 accent-umiblue-500">
           <div>
-            <div class="font-semibold">marine-tiny（軽量）</div>
-            <div class="text-sm text-slate-300/80">低消費・高速。ラズパイ/ノートPC向けの現場プレビュー。</div>
-          </div>
-        </label>
-        <label class="flex items-start gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 cursor-pointer">
-          <input type="radio" name="modelName" value="marine-large" class="mt-1 accent-umiblue-500">
-          <div>
-            <div class="font-semibold">marine-large（高精度）</div>
-            <div class="text-sm text-slate-300/80">誤検出を抑えたい解析や記録用に。</div>
+            <div class="font-semibold">best.pt（ローカル）</div>
+            <div class="text-sm text-slate-300/80">フルパスをAPIへ渡して推論します。</div>
           </div>
         </label>
       </div>
 
-      <!-- スペック表（例） -->
-      <div class="mt-8 overflow-x-auto">
-        <table class="min-w-full text-sm border-separate border-spacing-y-2">
-          <thead class="text-slate-300/80">
-            <tr>
-              <th class="text-left px-3 py-2">モデル</th>
-              <th class="text-left px-3 py-2">入力解像度</th>
-              <th class="text-left px-3 py-2">想定FPS</th>
-              <th class="text-left px-3 py-2">用途</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="bg-white/5">
-              <td class="px-3 py-2 font-semibold">marine-tiny</td>
-              <td class="px-3 py-2">640</td>
-              <td class="px-3 py-2">30〜60（GPU）/ 15〜30（CPU）</td>
-              <td class="px-3 py-2">現場プレビュー、軽量端末</td>
-            </tr>
-            <tr class="bg-white/5">
-              <td class="px-3 py-2 font-semibold">marine-large</td>
-              <td class="px-3 py-2">960〜1280</td>
-              <td class="px-3 py-2">10〜30（GPU）/ 5〜15（CPU）</td>
-              <td class="px-3 py-2">記録・分析、誤検出抑制</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- クラス一覧（例） -->
-      <div class="mt-8">
-        <div class="font-semibold">検出クラス（例）</div>
-        <div class="mt-2 text-slate-300/85 text-sm">
-          <span class="mr-2">bottle</span>
-          <span class="mr-2">can</span>
-          <span class="mr-2">bag</span>
-          <span class="mr-2">styrofoam</span>
-          <span class="mr-2">net</span>
-          <span class="mr-2">fish</span>
-          <span class="mr-2">bird</span>
-          <span class="mr-2">etc.</span>
-        </div>
+      <!-- グラフ2枚 -->
+      <div class="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <figure class="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+          <!-- ★ この画像を ./static/img/data-trend.png に置いてください -->
+          <img src="./static/img/data-trend.png" alt="データ量と精度の推移" class="w-full h-auto block">
+          <figcaption class="text-sm text-slate-300/80 p-3">図1. データ量とmAPの推移</figcaption>
+        </figure>
+        <figure class="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+          <!-- ★ この画像を ./static/img/map-pie.png に置いてください -->
+          <img src="./static/img/map-pie.png" alt="Umi no Me Ver.2.3のmAP割合" class="w-full h-auto block">
+          <figcaption class="text-sm text-slate-300/80 p-3">図2. Ver.2.3 クラス別mAP割合</figcaption>
+        </figure>
       </div>
     </div>
   </section>
 
-  <!-- Roadmap（後で中身を入れる用の空枠） -->
+  <!-- Roadmap（空枠：後で入れる） -->
   <section id="roadmap" class="py-20 bg-slate-900 hidden"></section>
 
   <!-- Demo Modal -->
