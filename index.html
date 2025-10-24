@@ -136,8 +136,83 @@
     </div>
   </section>
 
-  <!-- モデル／ロードマップは必要に応じて追記 -->
-  <section id="model" class="py-20 bg-slate-950 hidden"></section>
+  <!-- Model -->
+  <section id="model" class="py-20 bg-slate-950">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-extrabold">モデル</h2>
+      <p class="mt-2 text-slate-300/90">用途に応じて軽量・高精度モデルを切り替え可能。下のラジオで選ぶとデモ推論の <code>model</code> パラメータに反映されます。</p>
+
+      <!-- モデル選択 -->
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <label class="flex items-start gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 cursor-pointer">
+          <input type="radio" name="modelName" value="auto" class="mt-1 accent-umiblue-500" checked>
+          <div>
+            <div class="font-semibold">Auto（推奨）</div>
+            <div class="text-sm text-slate-300/80">サーバ側のデフォルトモデルを使用。運用環境の設定に追従。</div>
+          </div>
+        </label>
+        <label class="flex items-start gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 cursor-pointer">
+          <input type="radio" name="modelName" value="marine-tiny" class="mt-1 accent-umiblue-500">
+          <div>
+            <div class="font-semibold">marine-tiny（軽量）</div>
+            <div class="text-sm text-slate-300/80">低消費・高速。ラズパイ/ノートPC向けの現場プレビュー。</div>
+          </div>
+        </label>
+        <label class="flex items-start gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 cursor-pointer">
+          <input type="radio" name="modelName" value="marine-large" class="mt-1 accent-umiblue-500">
+          <div>
+            <div class="font-semibold">marine-large（高精度）</div>
+            <div class="text-sm text-slate-300/80">誤検出を抑えたい解析や記録用に。</div>
+          </div>
+        </label>
+      </div>
+
+      <!-- スペック表（例） -->
+      <div class="mt-8 overflow-x-auto">
+        <table class="min-w-full text-sm border-separate border-spacing-y-2">
+          <thead class="text-slate-300/80">
+            <tr>
+              <th class="text-left px-3 py-2">モデル</th>
+              <th class="text-left px-3 py-2">入力解像度</th>
+              <th class="text-left px-3 py-2">想定FPS</th>
+              <th class="text-left px-3 py-2">用途</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="bg-white/5">
+              <td class="px-3 py-2 font-semibold">marine-tiny</td>
+              <td class="px-3 py-2">640</td>
+              <td class="px-3 py-2">30〜60（GPU）/ 15〜30（CPU）</td>
+              <td class="px-3 py-2">現場プレビュー、軽量端末</td>
+            </tr>
+            <tr class="bg-white/5">
+              <td class="px-3 py-2 font-semibold">marine-large</td>
+              <td class="px-3 py-2">960〜1280</td>
+              <td class="px-3 py-2">10〜30（GPU）/ 5〜15（CPU）</td>
+              <td class="px-3 py-2">記録・分析、誤検出抑制</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- クラス一覧（例） -->
+      <div class="mt-8">
+        <div class="font-semibold">検出クラス（例）</div>
+        <div class="mt-2 text-slate-300/85 text-sm">
+          <span class="mr-2">bottle</span>
+          <span class="mr-2">can</span>
+          <span class="mr-2">bag</span>
+          <span class="mr-2">styrofoam</span>
+          <span class="mr-2">net</span>
+          <span class="mr-2">fish</span>
+          <span class="mr-2">bird</span>
+          <span class="mr-2">etc.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Roadmap（後で中身を入れる用の空枠） -->
   <section id="roadmap" class="py-20 bg-slate-900 hidden"></section>
 
   <!-- Demo Modal -->
@@ -218,7 +293,7 @@
     else { c.add('hidden'); stopAll(); }
   }
 
-  // ヘッダーの「デモを開く」/ ナビ「デモ」
+  // ヘッダーの「デモを開く」/ ナビ「デモ」＋スムーススクロール
   (function(){
     var btnOpen = document.getElementById('openDemo');
     if (btnOpen) btnOpen.addEventListener('click', function(){ toggleDemo(true); });
@@ -322,17 +397,28 @@
     if(playing) requestAnimationFrame(animate);
   }
 
+  // === detectFromCanvas: model= を自動付与 ===
   async function detectFromCanvas(){
     try{
       var blob = await new Promise(function(res){ canvas.toBlob(res,'image/jpeg',0.9); });
       if(!blob) throw new Error('canvas.toBlob failed');
       var fd = new FormData(); fd.append('image', new File([blob],'frame.jpg',{type:'image/jpeg'}));
+
+      // model パラメータ付与（autoのときは付けない）
+      var url = window.API_BASE + '/api/detect?conf=0.12&iou=0.50';
+      if (window.MODEL_NAME && window.MODEL_NAME !== 'auto') {
+        url += '&model=' + encodeURIComponent(window.MODEL_NAME);
+      }
+
       var t0 = performance.now();
-      var r = await fetch(window.API_BASE + '/api/detect?conf=0.12&iou=0.50', {method:'POST', body:fd});
+      var r = await fetch(url, {method:'POST', body:fd});
       if(!r.ok){ var tx = await r.text(); throw new Error(r.status + ' ' + r.statusText + ': ' + tx); }
       var data = await r.json(); window.lastResult = data;
       var t1 = performance.now(); log('検出: ' + (data.detections ? data.detections.length : 0) + '件 / ' + (t1-t0).toFixed(0) + 'ms');
-    }catch(e){ log('検出エラー: ' + (e && e.message ? e.message : e)); window.lastResult=null; }
+    }catch(e){
+      log('検出エラー: ' + (e && e.message ? e.message : e));
+      window.lastResult=null;
+    }
   }
 
   function drawOverlay(data){
@@ -390,6 +476,24 @@
     var clone = btn.cloneNode(true);
     clone.addEventListener('click', function(e){ e.preventDefault(); window.location.href = target; });
     btn.replaceWith(clone);
+  })();
+
+  // === Model selector: localStorageと連動 ===
+  (function(){
+    var key = 'MODEL_NAME';
+    var saved = localStorage.getItem(key) || 'auto';
+    window.MODEL_NAME = saved;
+
+    var radios = document.querySelectorAll('input[name="modelName"]');
+    for (var i=0;i<radios.length;i++){
+      if (radios[i].value === saved) radios[i].checked = true;
+      radios[i].addEventListener('change', function(e){
+        if (!e.target || !e.target.value) return;
+        window.MODEL_NAME = e.target.value;
+        localStorage.setItem(key, window.MODEL_NAME);
+        log('モデル切替: ' + window.MODEL_NAME);
+      });
+    }
   })();
   </script>
 </body>
