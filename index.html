@@ -429,7 +429,7 @@
   var startDemoBtn = document.getElementById('startDemo');
   if (startDemoBtn) {
     startDemoBtn.addEventListener('click', async function(){
-      if(playing) return; playing=true; await startSource(); if(!detectTimer) detectTimer=setInterval(detectFromCanvas,500);
+      if(playing) return; playing=true; await startSource(); if(!detectTimer) detectTimer=setInterval(detectFromCanvas,1500);
     });
   }
   var stopDemoBtn = document.getElementById('stopDemo');
