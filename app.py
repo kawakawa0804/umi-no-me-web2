@@ -7,60 +7,79 @@ import threading
 
 from flask import Flask, render_template, request, jsonify, send_file, Response
 
-# ================== Flask ==================
+# ============== Flask ==============
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MBまでに抑える（負荷軽減）
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2MB
 
-# ================== Paths & Env ==================
+# ---- CORS（必要なら origins を自分のドメインに絞る）----
+try:
+    from flask_cors import CORS
+    CORS(app, resources={r"/*": {"origins": "*"}})
+except Exception:
+    pass
+
+# ============== Paths & Env ==============
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.environ.get("MODEL_PATH", os.path.join(BASE_DIR, "models", "best.pt"))
 
-# Ultralytics/BLASのスレッドを抑制（CPU負荷・メモリ圧縮）
+# 既定モデル（従来互換）
+DEFAULT_MODEL_PATH = os.path.join(BASE_DIR, "models", "best.pt")
+MODEL_PATH = os.environ.get("MODEL_PATH", DEFAULT_MODEL_PATH)
+
+# “best” の別名解決（デプロイ先でパスを環境変数で差し替え可能）
+MODEL_MAP = {
+    "best": os.environ.get("MODEL_BEST_PATH", DEFAULT_MODEL_PATH)
+}
+
+# Ultralytics/BLAS のスレッド抑制
 os.environ.setdefault("YOLO_CONFIG_DIR", "/tmp/Ultralytics")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
-# ================== Model (lazy) ==================
+# ============== Model (lazy) ==============
 model = None
-_model_lock = threading.Lock()     # モデル読み込みの排他
-_infer_lock = threading.Lock()     # 推論を同時に1つに制限（Free環境での安定化）
+_loaded_path = None
+_model_lock = threading.Lock()
+_infer_lock = threading.Lock()
 
-def _ensure_model_loaded() -> bool:
-    """必要時にのみモデルを読み込む（起動を軽く）"""
-    global model
-    if model is not None:
+def _ensure_model_loaded(target_path: str) -> bool:
+    """
+    指定パスのモデルが未ロード/別物なら読み込む
+    """
+    global model, _loaded_path
+    if model is not None and _loaded_path == target_path:
         return True
-    if not os.path.exists(MODEL_PATH):
-        print(f"[WARN] Model not found at {MODEL_PATH}")
+    if not os.path.exists(target_path):
+        print(f"[WARN] Model not found: {target_path}")
         return False
     with _model_lock:
-        if model is not None:
+        if model is not None and _loaded_path == target_path:
             return True
         try:
             from ultralytics import YOLO
             try:
                 import torch
-                torch.set_num_threads(1)  # CPUスレッドさらに絞る
+                torch.set_num_threads(1)
             except Exception:
                 pass
-            m = YOLO(MODEL_PATH)
+            m = YOLO(target_path)
             model = m
-            print(f"[INFO] Model loaded: {MODEL_PATH}")
+            _loaded_path = target_path
+            print(f"[INFO] Model loaded: {_loaded_path}")
             return True
         except Exception as e:
             print(f"[ERROR] Failed to load model: {e}")
             model = None
+            _loaded_path = None
             return False
 
-# ================== Logs ==================
+# ============== Logs ==============
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 CSV_PATH = os.path.join(LOG_DIR, "detections.csv")
 
 def _append_rows(rows):
-    # rows: list[dict]
     with open(CSV_PATH, mode="a", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         for d in rows:
@@ -69,17 +88,13 @@ def _append_rows(rows):
                 d["class_id"], d["confidence"], *d["bbox"]
             ])
 
-# ================== Utils ==================
+# ============== Utils ==============
 def _read_image_bytes():
-    """
-    - multipart/form-data: file フィールド 'image' または 'file'
-    - JSON: { "frame": "data:image/jpeg;base64,..." }
-    のどちらでもOK。bytesを返す。
-    """
+    # multipart/form-data: 'image' or 'file'
     if "image" in request.files or "file" in request.files:
         file = request.files.get("image") or request.files.get("file")
         return file.read()
-
+    # JSON: { "frame": "data:image/jpeg;base64,..." }
     if request.is_json:
         data_url = request.json.get("frame")
         if isinstance(data_url, str) and "base64," in data_url:
@@ -87,7 +102,14 @@ def _read_image_bytes():
             return base64.b64decode(b64)
     return None
 
-# ================== Routes ==================
+def _resolve_model_path() -> str:
+    # ?model=best などを解決。なければ既定。
+    name = request.args.get("model") or request.form.get("model")
+    if name and name in MODEL_MAP:
+        return MODEL_MAP[name]
+    return MODEL_PATH
+
+# ============== Routes ==============
 @app.route("/")
 def index():
     try:
@@ -96,17 +118,19 @@ def index():
         return "<h1>Umi no Me</h1><p>Server is running.</p>", 200
 
 @app.route("/health")
+@app.route("/api/health")
 def health():
     return "ok", 200
 
 @app.route("/detect", methods=["POST"])
+@app.route("/api/detect", methods=["POST"])  # ← フロント互換のため追加
 def detect():
-    # 同時推論は1件に制限（重複は弾く）
     if not _infer_lock.acquire(blocking=False):
         return jsonify({"error": "busy"}), 429
     try:
-        if not _ensure_model_loaded():
-            return jsonify({"error": "Model not available"}), 503
+        target_model_path = _resolve_model_path()
+        if not _ensure_model_loaded(target_model_path):
+            return jsonify({"error": f"Model not available: {target_model_path}"}), 503
 
         img_bytes = _read_image_bytes()
         if not img_bytes:
@@ -114,32 +138,30 @@ def detect():
 
         import numpy as np
         import cv2
-
         arr = np.frombuffer(img_bytes, np.uint8)
-        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)  # BGR
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         if img is None:
             return jsonify({"error": "Failed to decode image"}), 400
 
-        # さらに縮小（幅480px目安）
+        # 幅480pxへ縮小
         target_w = 480
         h, w = img.shape[:2]
         if w > target_w:
             scale = target_w / float(w)
             img = cv2.resize(img, (target_w, int(h * scale)), interpolation=cv2.INTER_AREA)
 
-        # 軽量推論設定（CPU）
         try:
             results = model.predict(
                 source=img,
-                imgsz=320,         # さらに小さく
-                conf=0.45,         # しきい値上げで後段を軽く
+                imgsz=320,
+                conf=0.45,
                 iou=0.5,
-                max_det=3,         # 出力を絞る
-                agnostic_nms=True, # NMSを単純化
+                max_det=3,
+                agnostic_nms=True,
                 device="cpu",
                 half=False,
                 retina_masks=False,
-                classes=None,      # 特定クラスだけに絞るなら [0,1,...] を指定
+                classes=None,
                 verbose=False,
                 stream=False
             )
@@ -166,7 +188,6 @@ def detect():
 
 @app.route("/csv")
 def csv_view():
-    """detections.csv の最後の200行だけHTML表示（軽量）"""
     from collections import deque
     rows = deque(maxlen=200)
     if os.path.exists(CSV_PATH):
@@ -174,7 +195,6 @@ def csv_view():
             reader = csv.reader(f)
             for row in reader:
                 rows.append(row)
-
     html = [
         "<html><head><meta charset='utf-8'><title>detections.csv (tail 200)</title>",
         "<style>table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px}</style>",
